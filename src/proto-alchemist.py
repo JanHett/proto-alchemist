@@ -1,5 +1,6 @@
 import sys
 import os
+import glob
 import cv2
 import numpy as np
 import argparse
@@ -108,7 +109,8 @@ if __name__ == '__main__':
         description='Convert a color negative image to a positive.')
 
     parser.add_argument('negative',
-        help='The linear scan of the film.')
+        help='The linear scan of the film or a glob pattern describing '
+        'multiple files to treat')
     
     parser.add_argument('--base', '-b',
         dest='base',
@@ -123,8 +125,8 @@ if __name__ == '__main__':
         help='Show the converted image.')
     
     parser.add_argument('--output', '-o',
-        help='Save the converted image to this path. Either this or --show '
-        'has to be specified.')
+        help='Save the converted image to this directory using the name of the '
+        'input file. Either this or --show has to be specified.')
     
     # parser.add_argument('--color-space', '-c',
     #     default='ProphotoRGB',
@@ -151,32 +153,38 @@ if __name__ == '__main__':
         print('Either --show or --output has to be specified.')
         sys.exit(-1)
 
-    if not os.path.isfile(args.negative):
-        print(f'"{args.negative}" is not a file.')
-        sys.exit(-1)
+    # if not os.path.isfile(args.negative):
+    #     print(f'"{args.negative}" is not a file.')
+    #     sys.exit(-1)
 
     # Do the actual processing
 
-    neg = cv2.imread(args.negative)
-    if args.base:
-        base = average_base(cv2.imread(args.base), True)
-    else:
-        base = find_base(neg, True)
+    files = glob.glob(args.negative)
+    counter = 0
+    for file in files:
+        counter += 1
+        print(f'Processing file {counter} of {len(files)}...')
+        neg = cv2.imread(file)
+        if args.base:
+            base = average_base(cv2.imread(args.base), True)
+        else:
+            base = find_base(neg, True)
 
-    positive = invert(neg, base, True)
+        positive = invert(neg, base, True)
 
-    if args.output:
-        os.makedirs(os.path.dirname(os.path.abspath(args.output)),
-            exist_ok=True)
-        cv2.imwrite(
-            args.output,
-            (np.clip(positive, 0, 1) * 65535).astype(np.uint16))
+        if args.output:
+            filename = os.path.join(args.output, os.path.basename(file))
+            os.makedirs(os.path.dirname(os.path.abspath(filename)),
+                exist_ok=True)
+            cv2.imwrite(
+                filename,
+                (np.clip(positive, 0, 1) * 65535).astype(np.uint16))
 
-    if args.show:
-        cv2.imshow(
-            f'Proto Alchemist | {args.negative} converted to positive',
-            positive)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        if args.show:
+            cv2.imshow(
+                f'Proto Alchemist | {file} converted to positive',
+                positive)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
 
-    print(ERASE_LINE + 'Done.')
+        print(ERASE_LINE + 'Done.')
