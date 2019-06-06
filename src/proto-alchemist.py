@@ -26,11 +26,8 @@ def find_base(neg, print_progress=False):
                 previous_max = local_max
                 white_sample = [x, y]
 
-    return [ 
-        neg.item(white_sample[0], white_sample[1], 0),
-        neg.item(white_sample[0], white_sample[1], 1),
-        neg.item(white_sample[0], white_sample[1], 2)
-    ]
+    return [ neg.item(white_sample[0], white_sample[1], chan)
+        for chan in range(neg.shape[2]) ]
 
 def invert(neg, base, print_progress=False):
     if print_progress:
@@ -54,6 +51,7 @@ def invert(neg, base, print_progress=False):
     if print_progress:
             print(
                 ERASE_LINE + 'Normalizing...', end='\r'),
+
     res = cv2.normalize(res, None, 0.0, 1.0, cv2.NORM_MINMAX)
 
     return res
